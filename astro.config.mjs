@@ -1,7 +1,4 @@
 import { defineConfig } from 'astro/config';
 
 // https://astro.build/config
-export default defineConfig({
-  site: 'https://hoppay-sama.github.io',
-  base: '/Maghapon-Cafe',
-});
+export default defineConfig({});
