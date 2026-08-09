@@ -1,0 +1,137 @@
+---
+// Base — shared layout: head, self-hosted fonts, header, footer, cart drawer
+import '@fontsource/fraunces/400.css';
+import '@fontsource/fraunces/500.css';
+import '@fontsource/fraunces/600.css';
+import '@fontsource/fraunces/700.css';
+import '@fontsource/inter/400.css';
+import '@fontsource/inter/500.css';
+import '@fontsource/inter/600.css';
+import '@fontsource/inter/700.css';
+import '../styles/global.css';
+import CartDrawer from '../components/CartDrawer.astro';
+
+const {
+  title = 'Maghapon Café — Filipino Afternoon Coffee Culture',
+  description =
+    'A coffee spot and communal space in Caloocan, Metro Manila. Coffee, matcha, pastries, and rice bowls — open 2 PM to 11 PM.',
+} = Astro.props;
+const isAdmin = Astro.url.pathname.startsWith('/admin');
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container header-inner">
+        <a class="brand" href="/">
+          <img src="/images/logo.webp" alt="Maghapon Café logo" width="40" height="40" />
+          <span>Maghapon Café<small>Caloocan · Metro Manila</small></span>
+        </a>
+        <nav class="main-nav" aria-label="Main">
+          <a href="/">Home</a>
+          <a href="/menu">Menu</a>
+          <a href="/#booking">Book a table</a>
+        </nav>
+        <div class="header-actions">
+          <span class="status-pill" id="status-pill" role="status">
+            <span class="status-dot" aria-hidden="true"></span>
+            <span class="status-text">Checking hours…</span>
+          </span>
+          {!isAdmin && (
+            <button class="cart-btn" id="cart-open" aria-label="Open cart">
+              <span class="cart-icon" aria-hidden="true">☕</span>
+              <span class="cart-count" id="cart-count" hidden>0</span>
+            </button>
+          )}
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <slot />
+    </main>
+
+    <footer class="site-footer">
+      <div class="container">
+        <div class="footer-grid">
+          <div>
+            <div class="footer-brand">
+              <img src="/images/logo.webp" alt="" width="44" height="44" />
+              <strong>Maghapon Café</strong>
+            </div>
+            <p>
+              Rooted in the Filipino word <em>maghapon</em> — “all afternoon” — we invite you
+              to take your time over coffee worth staying for.
+            </p>
+          </div>
+          <div>
+            <h4>Visit</h4>
+            <ul>
+              <li>819 Villa Angelica Subdivision</li>
+              <li>Caloocan, 1422 Metro Manila</li>
+              <li>Open daily, 2 PM – 11 PM (GMT+8)</li>
+            </ul>
+          </div>
+          <div>
+            <h4>Connect</h4>
+            <ul>
+              <li><a href="mailto:maghaponcafe@gmail.com">maghaponcafe@gmail.com</a></li>
+              <li><a href="/#booking">Book a table or rent the space</a></li>
+              <li><a href="/admin">Admin (demo)</a></li>
+            </ul>
+          </div>
+        </div>
+        <div class="footer-bottom">
+          <span>maghapon coffee house · @maghaponcafe</span>
+          <span>© 2026 Maghapon Café</span>
+        </div>
+      </div>
+    </footer>
+
+    <CartDrawer />
+
+    <script>
+      // ---- Live open/closed status, computed from Manila time (GMT+8) ----
+      function tickClock() {
+        const pill = document.getElementById('status-pill');
+        if (!pill) return;
+        const parts = new Intl.DateTimeFormat('en-US', {
+          timeZone: 'Asia/Manila',
+          hour: 'numeric',
+          hour12: false,
+        }).formatToParts(new Date());
+        const hour = Number(parts.find((p) => p.type === 'hour').value);
+        const open = hour >= 14 && hour < 23;
+        pill.classList.toggle('closed', !open);
+        pill.querySelector('.status-text').textContent = open
+          ? 'Open now — closes 11 PM'
+          : 'Closed — opens at 2 PM';
+      }
+      tickClock();
+      setInterval(tickClock, 60000);
+
+      // ---- Fade-up reveals on scroll (IntersectionObserver, no library) ----
+      const io = new IntersectionObserver(
+        (entries) =>
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('revealed');
+              io.unobserve(entry.target);
+            }
+          }),
+        { threshold: 0.12 }
+      );
+      document.querySelectorAll('[data-reveal]').forEach((el) => io.observe(el));
+    </script>
+  </body>
+</html>

@@ -1,0 +1,276 @@
+---
+// CartDrawer — slide-over cart: item config, cart list, checkout, confirmation
+// All cart math lives in src/lib/cart.js (pure functions); this file only renders.
+import { menu, extras } from '../data/menu.js';
+const menuJson = JSON.stringify({ menu, extras });
+---
+<div class="drawer" id="cart-drawer" aria-hidden="true">
+  <div class="drawer-scrim" data-cart-close></div>
+  <div class="drawer-panel" role="dialog" aria-modal="true" aria-label="Your order">
+    <header class="drawer-head">
+      <h2 id="drawer-title">Your order</h2>
+      <button class="drawer-close" data-cart-close aria-label="Close cart">×</button>
+    </header>
+    <div class="drawer-body" id="drawer-body"></div>
+  </div>
+</div>
+
+<script type="application/json" id="menu-data" set:html={menuJson}></script>
+
+<script>
+  import {
+    addItem,
+    removeItem,
+    updateQty,
+    cartTotal,
+    cartCount,
+    formatPeso,
+    loadCart,
+    saveCart,
+    loadOrders,
+    saveOrders,
+    createOrder,
+  } from '../lib/cart.js';
+
+  const { menu, extras } = JSON.parse(document.getElementById('menu-data').textContent);
+  const drawer = document.getElementById('cart-drawer');
+  const body = document.getElementById('drawer-body');
+  const title = document.getElementById('drawer-title');
+  const badge = document.getElementById('cart-count');
+
+  let cart = loadCart();
+  let config = null; // { item, variant, mods: Set, qty }
+
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+  function renderBadge() {
+    const n = cartCount(cart);
+    badge.textContent = n;
+    badge.hidden = n === 0;
+  }
+  function persist() {
+    saveCart(cart);
+    renderBadge();
+  }
+  function openDrawer() {
+    drawer.classList.add('open');
+    drawer.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+    drawer.querySelector('.drawer-close').focus();
+  }
+  function closeDrawer() {
+    drawer.classList.remove('open');
+    drawer.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+  }
+
+  // ---- open/close wiring ----
+  document.getElementById('cart-open')?.addEventListener('click', () => {
+    renderCart();
+    openDrawer();
+  });
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('[data-cart-close]')) closeDrawer();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeDrawer();
+  });
+
+  // ---- view: configure an item (variant + modifiers + qty) ----
+  function openConfig(id) {
+    const item = menu.find((m) => m.id === id);
+    if (!item) return;
+    config = { item, variant: item.variants[0], mods: new Set(), qty: 1 };
+    renderConfig();
+    openDrawer();
+  }
+  function renderConfig() {
+    const item = config.item;
+    const mods = [...item.modifiers, ...extras];
+    title.textContent = item.name;
+    body.innerHTML = `
+      <div class="config-item">
+        <div class="config-avatar" aria-hidden="true">${esc(item.name.charAt(0))}</div>
+        <div>
+          <h3>${esc(item.name)}</h3>
+          <p>${esc(item.description)}</p>
+        </div>
+      </div>
+      <fieldset class="opt-group">
+        <legend>Size</legend>
+        <div class="opt-list">
+          ${item.variants
+            .map(
+              (v, i) => `
+              <label class="opt">
+                <input type="radio" name="cfg-variant" value="${i}" ${i === 0 ? 'checked' : ''} />
+                <span>${esc(v.label || 'Regular')}</span>
+                <span class="opt-price">${formatPeso(v.price)}</span>
+              </label>`
+            )
+            .join('')}
+        </div>
+      </fieldset>
+      <fieldset class="opt-group">
+        <legend>Add-ons</legend>
+        <div class="opt-list">
+          ${mods
+            .map(
+              (m) => `
+              <label class="opt">
+                <input type="checkbox" name="cfg-mod" value="${esc(m.id)}" />
+                <span>${esc(m.name)}</span>
+                <span class="opt-price">+${formatPeso(m.price)}</span>
+              </label>`
+            )
+            .join('')}
+        </div>
+      </fieldset>
+      <div class="qty-row">
+        <button class="qty-btn" data-qty="-1" aria-label="Decrease quantity">−</button>
+        <span class="qty-val" id="cfg-qty">1</span>
+        <button class="qty-btn" data-qty="1" aria-label="Increase quantity">+</button>
+      </div>
+      <button class="btn btn-primary btn-block" id="cfg-add">Add to cart</button>`;
+    body.querySelectorAll('input[name="cfg-variant"]').forEach((r) =>
+      r.addEventListener('change', () => {
+        config.variant = config.item.variants[Number(r.value)];
+      })
+    );
+    body.querySelectorAll('input[name="cfg-mod"]').forEach((c) =>
+      c.addEventListener('change', () => {
+        const m = mods.find((x) => x.id === c.value);
+        if (c.checked) config.mods.add(m);
+        else config.mods.delete(m);
+      })
+    );
+    body.querySelectorAll('[data-qty]').forEach((b) =>
+      b.addEventListener('click', () => {
+        config.qty = Math.max(1, config.qty + Number(b.dataset.qty));
+        body.querySelector('#cfg-qty').textContent = config.qty;
+      })
+    );
+    body.querySelector('#cfg-add').addEventListener('click', () => {
+      cart = addItem(cart, config.item, config.variant, [...config.mods], config.qty);
+      persist();
+      renderCart();
+    });
+  }
+
+  // ---- view: cart list ----
+  function renderCart() {
+    title.textContent = 'Your order';
+    if (cart.length === 0) {
+      body.innerHTML = `
+        <div class="drawer-empty">
+          <div class="big">☕</div>
+          <p>Your cart is empty.<br />Browse the menu and add something good.</p>
+          <a class="btn btn-primary" href="/menu" data-cart-close>View menu</a>
+        </div>`;
+      return;
+    }
+    body.innerHTML = `
+      ${cart
+        .map(
+          (l) => `
+          <div class="cart-line">
+            <div class="cart-line-main">
+              <div class="cart-line-name">${esc(l.name)}</div>
+              <div class="cart-line-detail">${esc(l.variant || '')}${l.modifiers.length ? ' · ' + esc(l.modifiers.join(' · ')) : ''}</div>
+              <div class="cart-line-qty">
+                <button data-line-qty="${esc(l.key)}" data-d="-1" aria-label="Decrease quantity">−</button>
+                <span>${l.qty}</span>
+                <button data-line-qty="${esc(l.key)}" data-d="1" aria-label="Increase quantity">+</button>
+                <button class="cart-line-remove" data-line-remove="${esc(l.key)}">Remove</button>
+              </div>
+            </div>
+            <div class="cart-line-price">${formatPeso(l.unit * l.qty)}</div>
+          </div>`
+        )
+        .join('')}
+      <div class="cart-total"><span>Total</span><b>${formatPeso(cartTotal(cart))}</b></div>
+      <button class="btn btn-primary btn-block" id="go-checkout">Checkout</button>`;
+    body.querySelectorAll('[data-line-qty]').forEach((b) =>
+      b.addEventListener('click', () => {
+        cart = updateQty(cart, b.dataset.lineQty, Number(b.dataset.d) + cart.find((l) => l.key === b.dataset.lineQty).qty);
+        persist();
+        renderCart();
+      })
+    );
+    body.querySelectorAll('[data-line-remove]').forEach((b) =>
+      b.addEventListener('click', () => {
+        cart = removeItem(cart, b.dataset.lineRemove);
+        persist();
+        renderCart();
+      })
+    );
+    body.querySelector('#go-checkout').addEventListener('click', renderCheckout);
+  }
+
+  // ---- view: checkout (pickup, no payment) ----
+  function renderCheckout() {
+    title.textContent = 'Checkout';
+    body.innerHTML = `
+      <div class="checkout-summary">
+        ${cart
+          .map(
+            (l) => `
+            <div class="checkout-line">
+              <span>${l.qty}× ${esc(l.name)}${l.variant ? ' (' + esc(l.variant) + ')' : ''}</span>
+              <span>${formatPeso(l.unit * l.qty)}</span>
+            </div>`
+          )
+          .join('')}
+        <div class="cart-total"><span>Total</span><b>${formatPeso(cartTotal(cart))}</b></div>
+      </div>
+      <form id="checkout-form" class="form-grid" novalidate>
+        <div class="field">
+          <label for="co-type">Order type</label>
+          <select id="co-type">
+            <option value="Pickup">Pickup</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="co-name">Name</label>
+          <input id="co-name" required placeholder="Your name" autocomplete="name" />
+        </div>
+        <div class="field">
+          <label for="co-phone">Phone</label>
+          <input id="co-phone" required placeholder="09xx xxx xxxx" autocomplete="tel" />
+        </div>
+        <button class="btn btn-primary btn-block" type="submit">Place order</button>
+      </form>
+      <p class="checkout-note">Demo checkout — no payment is taken. Pay at the counter when you pick up.</p>`;
+    body.querySelector('#checkout-form').addEventListener('submit', placeOrder);
+  }
+
+  // ---- place order → confirmation ----
+  function placeOrder(e) {
+    e.preventDefault();
+    const name = body.querySelector('#co-name').value.trim();
+    const phone = body.querySelector('#co-phone').value.trim();
+    if (!name || !phone) return;
+    const orders = loadOrders();
+    const order = createOrder({
+      customer: { name, phone },
+      items: cart.map((l) => ({ name: l.name, variant: l.variant, modifiers: l.modifiers, qty: l.qty, unit: l.unit })),
+      total: cartTotal(cart),
+      orders,
+    });
+    saveOrders([order, ...orders]);
+    cart = [];
+    persist();
+    title.textContent = 'Order confirmed';
+    body.innerHTML = `
+      <div class="done-icon" aria-hidden="true">✓</div>
+      <div class="done-number">${esc(order.id)}</div>
+      <p class="done-copy">Thanks, ${esc(name)}! Your order is in — we'll start preparing it right away.</p>
+      <p class="done-copy">Pickup · ${formatPeso(order.total)} · ${order.items.length} item${order.items.length === 1 ? '' : 's'}</p>
+      <button class="btn btn-primary btn-block" data-cart-close>Done</button>`;
+  }
+
+  // Public API for menu page "Add to cart" buttons
+  window.maghaponCart = { openConfig, openCart: () => { renderCart(); openDrawer(); } };
+  renderBadge();
+</script>

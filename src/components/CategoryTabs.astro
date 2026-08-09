@@ -1,0 +1,12 @@
+---
+// CategoryTabs — sticky anchor tabs that scroll to each menu section
+const { categories } = Astro.props;
+const slug = (label) => label.toLowerCase().replace(/\s+/g, '-');
+---
+<nav class="tabs" aria-label="Menu categories">
+  <div class="container tabs-inner">
+    {categories.map((label) => (
+      <a class="tab-btn" href={'#' + slug(label)}>{label}</a>
+    ))}
+  </div>
+</nav>

@@ -1,0 +1,80 @@
+---
+// Menu — full menu in 7 category sections, sticky anchor tabs, ordering
+import Base from '../layouts/Base.astro';
+import MenuCard from '../components/MenuCard.astro';
+import CategoryTabs from '../components/CategoryTabs.astro';
+import { menu, categories, extras, OFF_MENU_NOTE, CLASSICS_NOTE, MATCHA_NOTE } from '../data/menu.js';
+
+const slug = (label) => label.toLowerCase().replace(/\s+/g, '-');
+const seasonalItems = menu.filter((m) => m.seasonal);
+const notes = { Classics: CLASSICS_NOTE, Matcha: MATCHA_NOTE };
+---
+<Base
+  title="The Menu — Maghapon Café"
+  description="The full Maghapon Café menu: espresso classics, ceremonial matcha, Filipino-inspired signatures, non-coffee drinks, pastries, rice bowls, and pasta. Open 2 PM to 11 PM."
+>
+  <div class="page-head">
+    <div class="container">
+      <span class="eyebrow">Freshly made, all afternoon</span>
+      <h1>The Menu</h1>
+      <p>
+        Everything below is on the café menu today — prices in pesos, sizes noted per drink.
+        Add anything to your cart and check out at the counter.
+      </p>
+    </div>
+  </div>
+
+  <CategoryTabs categories={categories} />
+
+  <div class="container">
+    {categories.map((label) => (
+      <section class="menu-section" id={slug(label)}>
+        <div class="menu-section-head">
+          <h2>{label}</h2>
+          {notes[label] && <p class="menu-note">{notes[label]}</p>}
+        </div>
+        <div class="grid grid-3">
+          {menu
+            .filter((item) => item.category === label)
+            .map((item) => <MenuCard item={item} />)}
+        </div>
+      </section>
+    ))}
+
+    <!-- Extras -->
+    <section class="menu-section" id="extras">
+      <div class="section-head" data-reveal>
+        <span class="eyebrow">Make it yours</span>
+        <h2>Extras</h2>
+        <p>Add-ons available on any drink — pick them in the item detail when you add to cart.</p>
+      </div>
+      <div class="extras-grid" data-reveal>
+        {extras.map((extra) => (
+          <div class="extra-chip">
+            <span>{extra.name}</span>
+            <b>+₱{extra.price}</b>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- Off-menu / seasonal note -->
+    <section class="off-menu-note" data-reveal>
+      <span class="eyebrow">Off the menu</span>
+      <p>{OFF_MENU_NOTE}</p>
+      {seasonalItems.length > 0 && (
+        <p class="seasonal-line">
+          Currently seasonal: {seasonalItems.map((m) => m.name).join(' · ')} — while supplies last.
+        </p>
+      )}
+    </section>
+  </div>
+
+  <script>
+    // Add-to-cart buttons open the item config in the cart drawer
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-add]');
+      if (btn && window.maghaponCart) window.maghaponCart.openConfig(btn.dataset.add);
+    });
+  </script>
+</Base>

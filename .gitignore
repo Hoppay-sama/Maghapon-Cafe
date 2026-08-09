@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Astro cache
+.astro/
+
+# Local assets (research/branding source photos — not referenced by the site)
+.assets/
+
+# Logs
+*.log
+dev-server.log
+dev-server.err.log
+preview.log
+
+# Environment
+.env
+.env.*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Docs
+AGENTS.md

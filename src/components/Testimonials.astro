@@ -1,0 +1,22 @@
+---
+// Testimonials — real reviews from the cafe's socials (verbatim quotes)
+import { TESTIMONIALS } from '../data/menu.js';
+---
+<section class="section" id="reviews">
+  <div class="container">
+    <div class="section-head center" data-reveal>
+      <span class="eyebrow">Word on the street</span>
+      <h2>Loved by the afternoon crowd</h2>
+      <p>Real reviews from people who stayed a while.</p>
+    </div>
+    <div class="grid grid-3">
+      {TESTIMONIALS.map((t) => (
+        <figure class="testimonial-card" data-reveal>
+          <div class="testimonial-stars" aria-label="5 out of 5 stars">★★★★★</div>
+          <blockquote>“{t.quote}”</blockquote>
+          <figcaption>— {t.drink}</figcaption>
+        </figure>
+      ))}
+    </div>
+  </div>
+</section>
