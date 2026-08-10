@@ -129,8 +129,8 @@ const isAdmin = Astro.url.pathname.startsWith('/admin');
     <script>
       // ---- Live open/closed status, computed from Manila time (GMT+8) ----
       function tickClock() {
-        const pill = document.getElementById('status-pill');
-        if (!pill) return;
+        const pills = document.querySelectorAll('.status-pill');
+        if (!pills.length) return;
         const parts = new Intl.DateTimeFormat('en-US', {
           timeZone: 'Asia/Manila',
           hour: 'numeric',
@@ -138,10 +138,12 @@ const isAdmin = Astro.url.pathname.startsWith('/admin');
         }).formatToParts(new Date());
         const hour = Number(parts.find((p) => p.type === 'hour').value);
         const open = hour >= 14 && hour < 23;
-        pill.classList.toggle('closed', !open);
-        pill.querySelector('.status-text').textContent = open
-          ? 'Open now — closes 11 PM'
-          : 'Closed — opens at 2 PM';
+        pills.forEach((pill) => {
+          pill.classList.toggle('closed', !open);
+          pill.querySelector('.status-text').textContent = open
+            ? 'Open now — closes 11 PM'
+            : 'Closed — opens at 2 PM';
+        });
       }
       tickClock();
       setInterval(tickClock, 60000);
@@ -158,6 +160,71 @@ const isAdmin = Astro.url.pathname.startsWith('/admin');
         { threshold: 0.12 }
       );
       document.querySelectorAll('[data-reveal]').forEach((el) => io.observe(el));
+
+      // ---- Mobile nav drawer (≤767px hamburger menu) ----
+      const navToggle = document.getElementById('nav-toggle');
+      if (navToggle) {
+        const navBackdrop = document.getElementById('nav-backdrop');
+        const navMenu = document.getElementById('mobile-menu');
+        const navClose = document.getElementById('nav-close');
+
+        function focusableItems() {
+          return Array.from(navMenu.querySelectorAll('button, a[href]')).filter(
+            (el) => el.offsetParent !== null
+          );
+        }
+
+        function openNav() {
+          void navBackdrop.offsetWidth; // force reflow so transitions run
+          navBackdrop.classList.add('is-open');
+          navMenu.classList.add('is-open');
+          navToggle.setAttribute('aria-expanded', 'true');
+          document.body.style.overflow = 'hidden';
+          navClose.focus();
+        }
+
+        function closeNav() {
+          navBackdrop.classList.remove('is-open');
+          navMenu.classList.remove('is-open');
+          navToggle.setAttribute('aria-expanded', 'false');
+          document.body.style.overflow = '';
+          navToggle.focus();
+        }
+
+        navToggle.addEventListener('click', () => {
+          if (navMenu.classList.contains('is-open')) closeNav();
+          else openNav();
+        });
+        navClose.addEventListener('click', closeNav);
+        navBackdrop.addEventListener('click', closeNav);
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape' && navMenu.classList.contains('is-open')) {
+            closeNav();
+            return;
+          }
+          if (e.key === 'Tab' && navMenu.classList.contains('is-open')) {
+            const items = focusableItems();
+            if (!items.length) return;
+            const first = items[0];
+            const last = items[items.length - 1];
+            if (e.shiftKey && document.activeElement === first) {
+              e.preventDefault();
+              last.focus();
+            } else if (!e.shiftKey && document.activeElement === last) {
+              e.preventDefault();
+              first.focus();
+            }
+          }
+        });
+        navMenu.querySelectorAll('.mobile-nav a').forEach((link) =>
+          link.addEventListener('click', closeNav)
+        );
+        window.addEventListener('resize', () => {
+          if (window.innerWidth > 767 && navMenu.classList.contains('is-open')) {
+            closeNav();
+          }
+        });
+      }
     </script>
   </body>
 </html>
