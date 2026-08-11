@@ -46,8 +46,10 @@ const menuJson = JSON.stringify({ menu, extras });
   }
   function renderBadge() {
     const n = cartCount(cart);
-    badge.textContent = n;
-    badge.hidden = n === 0;
+    if (badge) {
+      badge.textContent = n;
+      badge.hidden = n === 0;
+    }
   }
   function persist() {
     saveCart(cart);
