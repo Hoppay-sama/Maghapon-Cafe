@@ -1,0 +1,103 @@
+---
+// Booking — first-class booking page: table reservations + space rental (demo flow).
+// Form markup + inline JS copied verbatim from the landing page so there is exactly
+// ONE booking form in the app (same ids, same 'maghapon-bookings' key, same success message).
+import Base from '../layouts/Base.astro';
+
+const timeSlots = ['2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM', '6:00 PM', '7:00 PM', '8:00 PM', '9:00 PM', '10:00 PM'];
+const guestOptions = Array.from({ length: 20 }, (_, i) => i + 1);
+---
+<Base
+  title="Book a table or rent the space — Maghapon Café"
+  description="Reserve a table, plan a small party, or rent the space at Maghapon Café in Caloocan — including TCG events. We'll confirm within 24 hours."
+>
+  <div class="page-head">
+    <div class="container">
+      <span class="eyebrow">Reserve your spot</span>
+      <h1>Book a table or rent the space</h1>
+      <p>
+        Planning a catch-up, a study session, a small party, or a space rental? Maghapon is
+        also home to TCG events and community activities — tell us what you're planning and
+        we'll have everything ready when you arrive.
+      </p>
+    </div>
+  </div>
+
+  <div class="container booking-grid booking-page-grid">
+    <div class="booking-media" data-reveal>
+      <img src="/images/coffee-3.webp" alt="A cozy table at Maghapon Café" width="800" height="999" />
+    </div>
+    <div data-reveal>
+      <form class="form-card" id="booking-form">
+        <div class="form-grid">
+          <div class="field">
+            <label for="bk-name">Name</label>
+            <input id="bk-name" name="name" required placeholder="Your name" autocomplete="name" />
+          </div>
+          <div class="field">
+            <label for="bk-phone">Phone</label>
+            <input id="bk-phone" name="phone" required placeholder="09xx xxx xxxx" autocomplete="tel" />
+          </div>
+          <div class="field">
+            <label for="bk-date">Date</label>
+            <input id="bk-date" name="date" type="date" required />
+          </div>
+          <div class="field">
+            <label for="bk-time">Time</label>
+            <select id="bk-time" name="time" required>
+              {timeSlots.map((slot) => <option value={slot}>{slot}</option>)}
+            </select>
+          </div>
+          <div class="field">
+            <label for="bk-guests">Guests</label>
+            <select id="bk-guests" name="guests" required>
+              {guestOptions.map((n) => <option value={n}>{n}</option>)}
+            </select>
+          </div>
+          <div class="field">
+            <label for="bk-type">Event type</label>
+            <select id="bk-type" name="type" required>
+              <option value="Coffee + chill">Coffee + chill</option>
+              <option value="Private event">Private event</option>
+              <option value="Space rental">Space rental</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" type="submit">Request booking</button>
+          <span class="checkout-note">We'll confirm within 24 hours. Demo only — no real reservation is made.</span>
+        </div>
+        <div class="form-success" id="booking-success" role="status"></div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    import { saveBookings } from '../lib/cart.js';
+
+    // Earliest bookable date = today in Manila time
+    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Manila' }).format(new Date());
+    document.getElementById('bk-date').min = today;
+
+    document.getElementById('booking-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const f = e.target;
+      const bookings = JSON.parse(localStorage.getItem('maghapon-bookings') || '[]');
+      bookings.unshift({
+        id: 'BK-' + Date.now().toString().slice(-6),
+        name: f.name.value.trim(),
+        phone: f.phone.value.trim(),
+        date: f.date.value,
+        time: f.time.value,
+        guests: Number(f.guests.value),
+        eventType: f.type.value,
+        createdAt: new Date().toISOString(),
+      });
+      saveBookings(bookings);
+      const msg = document.getElementById('booking-success');
+      msg.textContent = `Booking request received for ${f.date.value} at ${f.time.value} (${f.guests.value} guest${f.guests.value === '1' ? '' : 's'}, ${f.type.value}). We'll confirm within 24 hours.`;
+      msg.classList.add('show');
+      f.reset();
+    });
+  </script>
+</Base>

@@ -1,10 +1,11 @@
 ---
-// Landing — hero, brand story, hours & location, featured, testimonials, booking, rewards
+// Landing — order-first: greeting + search + category chips + popular grid,
+// then brand story, hours, testimonials, booking, rewards
 import Base from '../layouts/Base.astro';
 import Hero from '../components/Hero.astro';
 import MenuCard from '../components/MenuCard.astro';
 import Testimonials from '../components/Testimonials.astro';
-import { menu } from '../data/menu.js';
+import { menu, categories } from '../data/menu.js';
 
 const featuredIds = [
   'maghapon-latte',
@@ -13,13 +14,47 @@ const featuredIds = [
   'skrambol-latte',
   'salted-cookie',
   'tapa-bowl',
+  'bacon-carbonara',
+  'blueberry-soda',
 ];
-const featured = featuredIds.map((id) => menu.find((m) => m.id === id));
-const timeSlots = ['2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM', '6:00 PM', '7:00 PM', '8:00 PM', '9:00 PM', '10:00 PM'];
-const guestOptions = Array.from({ length: 20 }, (_, i) => i + 1);
 ---
 <Base>
-  <Hero />
+  <!-- Ordering surface — the first screen -->
+  <section class="order-surface">
+    <div class="container">
+      <h1 class="order-greeting"><span id="greeting">Good day</span>, what are you craving?</h1>
+      <p class="order-sub">Order ahead for pickup — we'll have it ready when you arrive.</p>
+
+      <div class="search-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+        <input id="order-search" class="search-input" type="search" placeholder="Search coffee, matcha, rice bowls…" aria-label="Search the menu" />
+      </div>
+
+      <div class="chip-row" id="category-chips" role="group" aria-label="Filter by category">
+        <button type="button" class="chip is-active" data-cat="All" aria-pressed="true">All</button>
+        {categories.map((label) => (
+          <button type="button" class="chip" data-cat={label} aria-pressed="false">{label}</button>
+        ))}
+      </div>
+
+      <div class="featured-head">
+        <h2>Popular right now</h2>
+        <span class="result-count" id="result-count" aria-live="polite">{featuredIds.length} items</span>
+      </div>
+
+      <div class="featured-grid" id="featured-grid" data-featured={featuredIds.join(',')}>
+        {menu.map((item) => (
+          <MenuCard item={item} compact reveal={false} hidden={!featuredIds.includes(item.id)} />
+        ))}
+      </div>
+
+      <div class="order-empty" id="order-empty" hidden>
+        <p>No matches — try another search.</p>
+      </div>
+    </div>
+  </section>
+
+  <Hero compact />
 
   <!-- Brand story -->
   <section class="section" id="story">
@@ -78,79 +113,21 @@ const guestOptions = Array.from({ length: 20 }, (_, i) => i + 1);
     </div>
   </section>
 
-  <!-- Featured ★ items -->
-  <section class="section" id="featured">
-    <div class="container">
-      <div class="section-head" data-reveal>
-        <span class="eyebrow">Customer favorites</span>
-        <h2>Start with the stars</h2>
-        <p>Six of the most-loved drinks and dishes on our menu — all marked ★ in the full menu.</p>
-      </div>
-      <div class="grid grid-3">
-        {featured.map((item) => <MenuCard item={item} interactive={false} />)}
-      </div>
-      <p class="center-cta" data-reveal>
-        <a class="btn btn-ghost" href="/menu">See the full menu</a>
-      </p>
-    </div>
-  </section>
-
   <Testimonials />
 
-  <!-- Booking (demo flow) -->
+  <!-- Booking CTA (the full booking form lives on /booking) -->
   <section class="section section-tint" id="booking">
-    <div class="container booking-grid">
-      <div class="booking-media" data-reveal>
-        <img src="/images/coffee-3.webp" alt="A cozy table at Maghapon Café" width="800" height="999" />
-      </div>
-      <div data-reveal>
-        <span class="eyebrow">Reserve your spot</span>
-        <h2>Book a table or rent the space</h2>
-        <p>
-          Planning a catch-up, a study session, a small party, or a space rental? Send a request
-          and we'll have everything ready when you arrive.
-        </p>
-        <form class="form-card" id="booking-form">
-          <div class="form-grid">
-            <div class="field">
-              <label for="bk-name">Name</label>
-              <input id="bk-name" name="name" required placeholder="Your name" autocomplete="name" />
-            </div>
-            <div class="field">
-              <label for="bk-phone">Phone</label>
-              <input id="bk-phone" name="phone" required placeholder="09xx xxx xxxx" autocomplete="tel" />
-            </div>
-            <div class="field">
-              <label for="bk-date">Date</label>
-              <input id="bk-date" name="date" type="date" required />
-            </div>
-            <div class="field">
-              <label for="bk-time">Time</label>
-              <select id="bk-time" name="time" required>
-                {timeSlots.map((slot) => <option value={slot}>{slot}</option>)}
-              </select>
-            </div>
-            <div class="field">
-              <label for="bk-guests">Guests</label>
-              <select id="bk-guests" name="guests" required>
-                {guestOptions.map((n) => <option value={n}>{n}</option>)}
-              </select>
-            </div>
-            <div class="field">
-              <label for="bk-type">Event type</label>
-              <select id="bk-type" name="type" required>
-                <option value="Coffee + chill">Coffee + chill</option>
-                <option value="Private event">Private event</option>
-                <option value="Space rental">Space rental</option>
-              </select>
-            </div>
-          </div>
-          <div class="form-actions">
-            <button class="btn btn-primary" type="submit">Request booking</button>
-            <span class="checkout-note">We'll confirm within 24 hours. Demo only — no real reservation is made.</span>
-          </div>
-          <div class="form-success" id="booking-success" role="status"></div>
-        </form>
+    <div class="container">
+      <div class="booking-cta" data-reveal>
+        <div>
+          <span class="eyebrow">Reserve your spot</span>
+          <h2>Book a table or rent the space</h2>
+          <p>
+            Catch-ups, study sessions, small parties, or TCG events — send a request and we'll
+            have everything ready when you arrive.
+          </p>
+        </div>
+        <a class="btn btn-primary" href="/booking">Book now</a>
       </div>
     </div>
   </section>
@@ -178,31 +155,63 @@ const guestOptions = Array.from({ length: 20 }, (_, i) => i + 1);
   </section>
 
   <script>
-    import { saveBookings, saveRewards } from '../lib/cart.js';
+    import { saveRewards } from '../lib/cart.js';
 
-    // Earliest bookable date = today in Manila time
-    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Manila' }).format(new Date());
-    document.getElementById('bk-date').min = today;
+    // Time-based greeting (visitor's local hour)
+    const greeting = document.getElementById('greeting');
+    if (greeting) {
+      const h = new Date().getHours();
+      greeting.textContent = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+    }
 
-    document.getElementById('booking-form').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const f = e.target;
-      const bookings = JSON.parse(localStorage.getItem('maghapon-bookings') || '[]');
-      bookings.unshift({
-        id: 'BK-' + Date.now().toString().slice(-6),
-        name: f.name.value.trim(),
-        phone: f.phone.value.trim(),
-        date: f.date.value,
-        time: f.time.value,
-        guests: Number(f.guests.value),
-        eventType: f.type.value,
-        createdAt: new Date().toISOString(),
+    // Ordering surface: search + category chips filter the popular grid
+    const grid = document.getElementById('featured-grid');
+    const cards = [...grid.querySelectorAll('.menu-card')];
+    const featuredSet = new Set(grid.dataset.featured.split(','));
+    const chips = [...document.querySelectorAll('#category-chips .chip')];
+    const search = document.getElementById('order-search');
+    const count = document.getElementById('result-count');
+    const empty = document.getElementById('order-empty');
+    let category = 'All';
+    let query = '';
+
+    function applyFilters() {
+      let visible = 0;
+      cards.forEach((card) => {
+        const catOk = category === 'All' || card.dataset.category === category;
+        const qOk = !query || card.dataset.search.includes(query);
+        const featuredOnly = category === 'All' && !query;
+        const show = catOk && qOk && (!featuredOnly || featuredSet.has(card.dataset.id));
+        card.hidden = !show;
+        if (show) visible++;
       });
-      saveBookings(bookings);
-      const msg = document.getElementById('booking-success');
-      msg.textContent = `Booking request received for ${f.date.value} at ${f.time.value} (${f.guests.value} guest${f.guests.value === '1' ? '' : 's'}, ${f.type.value}). We'll confirm within 24 hours.`;
-      msg.classList.add('show');
-      f.reset();
+      count.textContent = visible + (visible === 1 ? ' item' : ' items');
+      empty.hidden = visible > 0;
+    }
+
+    chips.forEach((chip) => {
+      chip.addEventListener('click', () => {
+        chips.forEach((c) => {
+          const active = c === chip;
+          c.classList.toggle('is-active', active);
+          c.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+        category = chip.dataset.cat;
+        applyFilters();
+      });
+    });
+
+    search.addEventListener('input', () => {
+      query = search.value.trim().toLowerCase();
+      applyFilters();
+    });
+
+    applyFilters();
+
+    // Add-to-cart buttons open the item config in the cart drawer
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-add]');
+      if (btn && window.maghaponCart) window.maghaponCart.openConfig(btn.dataset.add);
     });
 
     document.getElementById('loyalty-form').addEventListener('submit', (e) => {

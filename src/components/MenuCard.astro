@@ -1,9 +1,24 @@
 ---
 // MenuCard — one menu item: placeholder art, badges, price chips, add-to-cart
-const { item, interactive = true } = Astro.props;
+// compact: dense card for the landing ordering grid (price line + circle add button, no description)
+// reveal: false disables the scroll-reveal so first-screen cards render instantly
+// hidden: passthrough so the landing grid can pre-hide non-featured items
+const { item, interactive = true, compact = false, reveal = true, hidden = false } = Astro.props;
 const initial = item.name.charAt(0).toUpperCase();
+const searchText = (item.name + ' ' + item.description).toLowerCase();
+const prices = item.variants.map((v) => v.price);
+const min = Math.min(...prices);
+const max = Math.max(...prices);
+const priceText = min === max ? `₱${min}` : `₱${min}–₱${max}`;
 ---
-<article class="menu-card" data-reveal>
+<article
+  class={compact ? 'menu-card menu-card-compact' : 'menu-card'}
+  data-reveal={reveal ? '' : undefined}
+  hidden={hidden || undefined}
+  data-id={item.id}
+  data-category={item.category}
+  data-search={searchText}
+>
   <div class="menu-card-media" aria-hidden="true">
     <span class="menu-card-initial">{initial}</span>
     {item.limited && <span class="badge badge-limited">Limited</span>}
@@ -12,19 +27,28 @@ const initial = item.name.charAt(0).toUpperCase();
   </div>
   <div class="menu-card-body">
     <h3>{item.name}</h3>
-    <p>{item.description}</p>
-    <div class="price-row">
-      {item.variants.map((variant) => (
-        <span class="price-chip">
-          {variant.label && <span class="price-size">{variant.label}</span>}
-          <b>₱{variant.price}</b>
-        </span>
-      ))}
-    </div>
-    {interactive ? (
-      <button class="btn btn-primary btn-sm" data-add={item.id}>Add to cart</button>
+    {!compact && <p>{item.description}</p>}
+    {compact ? (
+      <div class="compact-row">
+        <span class="compact-price">{priceText}</span>
+        <button class="add-btn" type="button" data-add={item.id} aria-label={`Add ${item.name} to cart`}>+</button>
+      </div>
     ) : (
-      <a class="btn btn-ghost btn-sm" href="/menu">On the menu</a>
+      <>
+        <div class="price-row">
+          {item.variants.map((variant) => (
+            <span class="price-chip">
+              {variant.label && <span class="price-size">{variant.label}</span>}
+              <b>₱{variant.price}</b>
+            </span>
+          ))}
+        </div>
+        {interactive ? (
+          <button class="btn btn-primary btn-sm" type="button" data-add={item.id}>Add to cart</button>
+        ) : (
+          <a class="btn btn-ghost btn-sm" href="/menu">On the menu</a>
+        )}
+      </>
     )}
   </div>
 </article>

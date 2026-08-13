@@ -40,6 +40,7 @@ const menuJson = JSON.stringify({ menu, extras });
 
   let cart = loadCart();
   let config = null; // { item, variant, mods: Set, qty }
+  let lastTrigger = null;
 
   function esc(s) {
     return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -54,29 +55,54 @@ const menuJson = JSON.stringify({ menu, extras });
   function persist() {
     saveCart(cart);
     renderBadge();
+    // Canonical cart-changed signal — CartPanel (and this drawer) listen to stay in sync.
+    window.dispatchEvent(new CustomEvent('maghapon:cart-changed'));
   }
-  function openDrawer() {
+  function notifyDrawerState(open) {
+    window.dispatchEvent(new CustomEvent('maghapon:drawer-state', { detail: { open } }));
+  }
+  function openDrawer(trigger = null) {
+    if (drawer.classList.contains('open')) return;
+    if (trigger && typeof trigger.focus === 'function') lastTrigger = trigger;
     drawer.classList.add('open');
     drawer.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
     drawer.querySelector('.drawer-close').focus();
+    notifyDrawerState(true);
   }
   function closeDrawer() {
+    if (!drawer.classList.contains('open')) return;
     drawer.classList.remove('open');
     drawer.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = '';
+    notifyDrawerState(false);
+    if (lastTrigger?.isConnected) lastTrigger.focus();
+    lastTrigger = null;
   }
 
   // ---- open/close wiring ----
-  document.getElementById('cart-open')?.addEventListener('click', () => {
+  window.addEventListener('maghapon:cart-toggle', (event) => {
+    if (drawer.classList.contains('open')) {
+      closeDrawer();
+      return;
+    }
     renderCart();
-    openDrawer();
+    openDrawer(event.detail?.trigger || null);
   });
+  window.addEventListener('maghapon:cart-close', closeDrawer);
   document.addEventListener('click', (e) => {
     if (e.target.closest('[data-cart-close]')) closeDrawer();
   });
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeDrawer();
+  });
+
+  // Keep this drawer in sync when CartPanel changes the cart (same localStorage source).
+  // Only the cart view re-renders live; config/checkout/confirmation views are left alone.
+  window.addEventListener('maghapon:cart-changed', () => {
+    cart = loadCart();
+    renderBadge();
+    if (drawer.classList.contains('open') && title.textContent === 'Your order') renderCart();
   });
 
   // ---- view: configure an item (variant + modifiers + qty) ----
@@ -85,7 +111,7 @@ const menuJson = JSON.stringify({ menu, extras });
     if (!item) return;
     config = { item, variant: item.variants[0], mods: new Set(), qty: 1 };
     renderConfig();
-    openDrawer();
+    openDrawer(document.activeElement);
   }
   function renderConfig() {
     const item = config.item;

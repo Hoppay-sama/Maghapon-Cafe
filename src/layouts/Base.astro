@@ -1,5 +1,5 @@
 ---
-// Base — shared layout: head, self-hosted fonts, header, footer, cart drawer
+// Base — shared layout: head, self-hosted fonts, app shell, global controls, footer, cart drawer
 import '@fontsource/fraunces/400.css';
 import '@fontsource/fraunces/500.css';
 import '@fontsource/fraunces/600.css';
@@ -10,6 +10,7 @@ import '@fontsource/inter/600.css';
 import '@fontsource/inter/700.css';
 import '../styles/global.css';
 import CartDrawer from '../components/CartDrawer.astro';
+import CartPanel from '../components/CartPanel.astro';
 
 const {
   title = 'Maghapon Café — Filipino Afternoon Coffee Culture',
@@ -17,6 +18,11 @@ const {
     'A coffee spot and communal space in Caloocan, Metro Manila. Coffee, matcha, pastries, and rice bowls — open 2 PM to 11 PM.',
 } = Astro.props;
 const isAdmin = Astro.url.pathname.startsWith('/admin');
+const path = Astro.url.pathname;
+const isHome = path === '/';
+const isMenu = path === '/menu';
+const isBooking = path === '/booking';
+const isOrders = path === '/my-orders';
 ---
 <!doctype html>
 <html lang="en">
@@ -31,100 +37,151 @@ const isAdmin = Astro.url.pathname.startsWith('/admin');
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   </head>
   <body>
-    <header class="site-header">
-      <div class="container header-inner">
-        <a class="brand" href="/">
-          <img src="/images/logo.webp" alt="Maghapon Café logo" width="40" height="40" />
-          <span>Maghapon Café<small>Caloocan · Metro Manila</small></span>
-        </a>
-        <nav class="main-nav" aria-label="Main">
-          <a href="/">Home</a>
-          <a href="/menu">Menu</a>
-          <a href="/#booking">Book a table</a>
-        </nav>
-        <div class="header-actions">
-          <span class="status-pill" id="status-pill" role="status">
+    <div class="app-shell">
+      <!-- Floating global controls: shop status + the single order trigger, top-right, all widths. -->
+      {!isAdmin && (
+        <div class="global-controls" id="global-controls">
+          <span class="status-pill global-status" id="status-pill" role="status" aria-label="Shop status: Checking hours…" title="Checking hours…">
             <span class="status-dot" aria-hidden="true"></span>
             <span class="status-text">Checking hours…</span>
           </span>
-          {!isAdmin && (
-            <button class="cart-btn" id="cart-open" aria-label="Open cart">
-              <span class="cart-icon" aria-hidden="true">☕</span>
-              <span class="cart-count" id="cart-count" hidden>0</span>
-            </button>
-            <button
-              class="nav-toggle"
-              id="nav-toggle"
-              aria-label="Menu"
-              aria-expanded="false"
-              aria-controls="mobile-menu"
-            >
-              <span class="nav-toggle-icon" aria-hidden="true"></span>
-            </button>
-          )}
+          <button class="cart-btn order-toggle" id="cart-open" type="button" data-order-toggle aria-controls="cart-panel" aria-expanded="false" aria-label="Open order menu" title="Open order menu">
+            <span class="cart-icon" aria-hidden="true">☕</span>
+            <span class="cart-count" id="cart-count" hidden>0</span>
+          </button>
         </div>
-      </div>
-    </header>
-
-    {!isAdmin && (
-      <div class="nav-backdrop" id="nav-backdrop"></div>
-      <aside class="mobile-menu" id="mobile-menu" role="dialog" aria-modal="true" aria-label="Menu">
-        <div class="mobile-menu-head">
-          <span class="mobile-menu-title">Menu</span>
-          <button class="mobile-menu-close" id="nav-close" aria-label="Close menu">✕</button>
-        </div>
-        <nav class="mobile-nav" aria-label="Mobile">
-          <a href="/">Home</a>
-          <a href="/menu">Menu</a>
-          <a href="/#booking">Book a table</a>
+      )}
+      <!-- Desktop nav rail (≥768px) -->
+      <aside class="nav-rail" id="nav-rail" aria-label="Site">
+        <a class="brand" href="/" aria-label="Maghapon Café home">
+          <img src="/images/logo.webp" alt="Maghapon Café logo" width="40" height="40" />
+          <span class="brand-copy">Maghapon Café<small>Caloocan · Metro Manila</small></span>
+        </a>
+        <nav class="rail-nav" id="rail-navigation" aria-label="Main">
+          <a href="/" class={isHome ? 'is-active' : ''} aria-current={isHome ? 'page' : undefined} aria-label="Home" title="Home">
+            <svg class="rail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5" /><path d="M5 9.5V21h14V9.5" /></svg>
+            <span class="rail-label">Home</span>
+          </a>
+          <a href="/menu" class={isMenu ? 'is-active' : ''} aria-current={isMenu ? 'page' : undefined} aria-label="Order" title="Order">
+            <svg class="rail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12" /><path d="M7 3v5a5 5 0 0 0 10 0V3" /><path d="M12 13v8" /><path d="M8 21h8" /></svg>
+            <span class="rail-label">Order</span>
+          </a>
+          <a href="/booking" class={isBooking ? 'is-active' : ''} aria-current={isBooking ? 'page' : undefined} aria-label="Book a table" title="Book a table">
+            <svg class="rail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2" /><path d="M3 9h18" /><path d="M8 2v4" /><path d="M16 2v4" /></svg>
+            <span class="rail-label">Book a table</span>
+          </a>
+          <a href="/my-orders" class={isOrders ? 'is-active' : ''} aria-current={isOrders ? 'page' : undefined} aria-label="My orders" title="My orders">
+            <svg class="rail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2h12l2 4v16H4V6l2-4Z" /><path d="M4 6h16" /><path d="M8 10h8" /><path d="M8 14h8" /></svg>
+            <span class="rail-label">My orders</span>
+          </a>
+          <a href="/#rewards" aria-label="Rewards" title="Rewards">
+            <svg class="rail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 14.8 8.7 21 9.6l-4.5 4.4 1.1 6.2-5.6-2.9-5.6 2.9 1.1-6.2L3 9.6l6.2-.9L12 3Z" /></svg>
+            <span class="rail-label">Rewards</span>
+          </a>
         </nav>
-        <div class="status-pill" role="status">
-          <span class="status-dot" aria-hidden="true"></span>
-          <span class="status-text">Checking hours…</span>
+        <div class="rail-footer">
+          <button class="rail-toggle" id="rail-toggle" type="button" aria-expanded="true" aria-controls="nav-rail" aria-label="Collapse sidebar" title="Collapse sidebar">
+            <svg class="rail-toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
+            <span class="rail-toggle-label">Collapse sidebar</span>
+          </button>
         </div>
       </aside>
-    )}
 
-    <main>
-      <slot />
-    </main>
+      <div class="app-main">
+        <!-- Sticky admin toolbar: status pill only, never customer order controls (admin unchanged). -->
+        {isAdmin && (
+          <div class="app-toolbar">
+            <span class="status-pill toolbar-status" id="status-pill" role="status" aria-label="Shop status: Checking hours…" title="Checking hours…">
+              <span class="status-dot" aria-hidden="true"></span>
+              <span class="status-text">Checking hours…</span>
+            </span>
+          </div>
+        )}
 
-    <footer class="site-footer">
-      <div class="container">
-        <div class="footer-grid">
-          <div>
-            <div class="footer-brand">
-              <img src="/images/logo.webp" alt="" width="44" height="44" />
-              <strong>Maghapon Café</strong>
+        <!-- Mobile compact top bar (≤767px): brand lockup; admin keeps its status pill. -->
+        <header class="mobile-topbar">
+          <a class="brand" href="/" aria-label="Maghapon Café home">
+            <img src="/images/logo.webp" alt="Maghapon Café logo" width="32" height="32" />
+            <span class="brand-copy">Maghapon Café</span>
+          </a>
+          {isAdmin && (
+            <div class="mobile-topbar-actions">
+              <span class="status-pill mobile-status" role="status" aria-label="Shop status: Checking hours…" title="Checking hours…">
+                <span class="status-dot" aria-hidden="true"></span>
+                <span class="status-text">Checking hours…</span>
+              </span>
             </div>
-            <p>
-              Rooted in the Filipino word <em>maghapon</em> — “all day long” — we invite you
-              to take your time over coffee worth staying for.
-            </p>
+          )}
+        </header>
+
+        <main>
+          <slot />
+        </main>
+
+        <footer class="site-footer">
+          <div class="container">
+            <div class="footer-grid">
+              <div>
+                <div class="footer-brand">
+                  <img src="/images/logo.webp" alt="" width="44" height="44" />
+                  <strong>Maghapon Café</strong>
+                </div>
+                <p>
+                  Rooted in the Filipino word <em>maghapon</em> — “all day long” — we invite you
+                  to take your time over coffee worth staying for.
+                </p>
+              </div>
+              <div>
+                <h4>Visit</h4>
+                <ul>
+                  <li>819 Villa Angelica Subdivision</li>
+                  <li>Caloocan, 1422 Metro Manila</li>
+                  <li>Open daily, 2 PM – 11 PM (GMT+8)</li>
+                </ul>
+              </div>
+              <div>
+                <h4>Connect</h4>
+                <ul>
+                  <li><a href="mailto:maghaponcafe@gmail.com">maghaponcafe@gmail.com</a></li>
+                  <li><a href="/booking">Book a table or rent the space</a></li>
+                  <li><a href="/admin">Admin (demo)</a></li>
+                </ul>
+              </div>
+            </div>
+            <div class="footer-bottom">
+              <span>maghapon coffee house · @maghaponcafe</span>
+              <span>© 2026 Maghapon Café</span>
+            </div>
           </div>
-          <div>
-            <h4>Visit</h4>
-            <ul>
-              <li>819 Villa Angelica Subdivision</li>
-              <li>Caloocan, 1422 Metro Manila</li>
-              <li>Open daily, 2 PM – 11 PM (GMT+8)</li>
-            </ul>
-          </div>
-          <div>
-            <h4>Connect</h4>
-            <ul>
-              <li><a href="mailto:maghaponcafe@gmail.com">maghaponcafe@gmail.com</a></li>
-              <li><a href="/#booking">Book a table or rent the space</a></li>
-              <li><a href="/admin">Admin (demo)</a></li>
-            </ul>
-          </div>
-        </div>
-        <div class="footer-bottom">
-          <span>maghapon coffee house · @maghaponcafe</span>
-          <span>© 2026 Maghapon Café</span>
-        </div>
+        </footer>
       </div>
-    </footer>
+
+      {!isAdmin && <CartPanel />}
+    </div>
+
+    {!isAdmin && (
+      <nav class="tab-bar" aria-label="Primary">
+        <a href="/" class={isHome ? 'is-active' : ''} aria-current={isHome ? 'page' : undefined}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5" /><path d="M5 9.5V21h14V9.5" /></svg>
+          <span>Home</span>
+        </a>
+        <a href="/menu" class={isMenu ? 'is-active' : ''} aria-current={isMenu ? 'page' : undefined}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></svg>
+          <span>Menu</span>
+        </a>
+        <a href="/booking" class={isBooking ? 'is-active' : ''} aria-current={isBooking ? 'page' : undefined}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2" /><path d="M3 9h18" /><path d="M8 2v4" /><path d="M16 2v4" /></svg>
+          <span>Book</span>
+        </a>
+         <button class="tab-cart" id="cart-open-tab" type="button" data-order-toggle aria-controls="cart-drawer" aria-expanded="false" aria-label="Open order menu" title="Open order menu">
+          <span class="tab-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.5" /><circle cx="17" cy="20" r="1.5" /><path d="M3 3h2l2.5 12.5a1 1 0 0 0 1 .5h8.5a1 1 0 0 0 1-.8L20 8H6" /></svg>
+            <span class="cart-count" id="cart-count-tab" data-cart-badge hidden>0</span>
+          </span>
+          <span>Cart</span>
+        </button>
+      </nav>
+    )}
 
     <CartDrawer />
 
@@ -140,11 +197,14 @@ const isAdmin = Astro.url.pathname.startsWith('/admin');
         }).formatToParts(new Date());
         const hour = Number(parts.find((p) => p.type === 'hour').value);
         const open = hour >= 14 && hour < 23;
+        const fullText = open ? 'Open now — closes 11 PM' : 'Closed — opens at 2 PM';
+        const isNarrow = window.matchMedia('(max-width: 767px)').matches;
         pills.forEach((pill) => {
           pill.classList.toggle('closed', !open);
-          pill.querySelector('.status-text').textContent = open
-            ? 'Open now — closes 11 PM'
-            : 'Closed — opens at 2 PM';
+          const short = pill.classList.contains('mobile-status') || (pill.classList.contains('global-status') && isNarrow);
+          pill.querySelector('.status-text').textContent = short ? (open ? 'Open' : 'Closed') : fullText;
+          pill.setAttribute('aria-label', `Shop status: ${fullText}`);
+          pill.title = fullText;
         });
       }
       tickClock();
@@ -163,73 +223,135 @@ const isAdmin = Astro.url.pathname.startsWith('/admin');
       );
       document.querySelectorAll('[data-reveal]').forEach((el) => io.observe(el));
 
-      // ---- Mobile nav drawer (≤767px hamburger menu) ----
-      const navToggle = document.getElementById('nav-toggle');
-      if (navToggle) {
-        const navBackdrop = document.getElementById('nav-backdrop');
-        const navMenu = document.getElementById('mobile-menu');
-        const navClose = document.getElementById('nav-close');
+      // ---- Shared order-surface coordinator ----
+      // The panel and drawer are both rendered once; this coordinator chooses exactly one
+      // surface for the current breakpoint instead of allowing controls to stack them.
+      const shell = document.querySelector('.app-shell');
+      const panel = document.getElementById('cart-panel');
+      const railToggle = document.getElementById('rail-toggle');
+      const orderToggles = [...document.querySelectorAll('[data-order-toggle]')];
+      const desktopQuery = window.matchMedia('(min-width: 1024px)');
+      const railQuery = window.matchMedia('(min-width: 1024px)');
+      const panelClose = panel?.querySelector('[data-order-close]');
+      const RAIL_STORAGE_KEY = 'maghapon-rail-collapsed';
+      let panelOpen = false;
+      let drawerOpen = false;
+      let panelTrigger = null;
 
-        function focusableItems() {
-          return Array.from(navMenu.querySelectorAll('button, a[href]')).filter(
-            (el) => el.offsetParent !== null
-          );
-        }
+      function usesPanel() {
+        return desktopQuery.matches && Boolean(panel);
+      }
 
-        function openNav() {
-          void navBackdrop.offsetWidth; // force reflow so transitions run
-          navBackdrop.classList.add('is-open');
-          navMenu.classList.add('is-open');
-          navToggle.setAttribute('aria-expanded', 'true');
-          document.body.style.overflow = 'hidden';
-          navClose.focus();
-        }
-
-        function closeNav() {
-          navBackdrop.classList.remove('is-open');
-          navMenu.classList.remove('is-open');
-          navToggle.setAttribute('aria-expanded', 'false');
-          document.body.style.overflow = '';
-          navToggle.focus();
-        }
-
-        navToggle.addEventListener('click', () => {
-          if (navMenu.classList.contains('is-open')) closeNav();
-          else openNav();
+      function syncOrderControls() {
+        const drawerIsSurface = drawerOpen;
+        const target = drawerIsSurface ? 'cart-drawer' : usesPanel() ? 'cart-panel' : 'cart-drawer';
+        const open = drawerIsSurface || (usesPanel() && panelOpen);
+        orderToggles.forEach((toggle) => {
+          toggle.setAttribute('aria-controls', target);
+          toggle.setAttribute('aria-expanded', String(open));
+          toggle.setAttribute('aria-label', open ? 'Close order menu' : 'Open order menu');
+          toggle.title = open ? 'Close order menu' : 'Open order menu';
         });
-        navClose.addEventListener('click', closeNav);
-        navBackdrop.addEventListener('click', closeNav);
-        document.addEventListener('keydown', (e) => {
-          if (e.key === 'Escape' && navMenu.classList.contains('is-open')) {
-            closeNav();
-            return;
-          }
-          if (e.key === 'Tab' && navMenu.classList.contains('is-open')) {
-            const items = focusableItems();
-            if (!items.length) return;
-            const first = items[0];
-            const last = items[items.length - 1];
-            if (e.shiftKey && document.activeElement === first) {
-              e.preventDefault();
-              last.focus();
-            } else if (!e.shiftKey && document.activeElement === last) {
-              e.preventDefault();
-              first.focus();
-            }
-          }
-        });
-        navMenu.querySelectorAll('.mobile-nav a').forEach((link) =>
-          link.addEventListener('click', closeNav)
-        );
-        window.addEventListener('resize', () => {
-          if (window.innerWidth > 767 && navMenu.classList.contains('is-open')) {
-            closeNav();
-          }
-        });
+        if (panel) panel.setAttribute('aria-hidden', String(!panelOpen));
+      }
+
+      function setPanelOpen(next, trigger = null) {
+        if (!shell || !panel || !usesPanel()) {
+          panelOpen = false;
+          shell?.classList.remove('cart-panel-open');
+          syncOrderControls();
+          return;
+        }
+        panelOpen = next;
+        if (next && trigger) panelTrigger = trigger;
+        shell.classList.toggle('cart-panel-open', next);
+        panel.setAttribute('aria-hidden', String(!next));
+        syncOrderControls();
+        if (next) {
+          window.requestAnimationFrame(() => panelClose?.focus());
+        } else if (panelTrigger?.isConnected) {
+          panelTrigger.focus();
+        }
+      }
+
+      function handleOrderToggle(event) {
+        const trigger = event.currentTarget;
+        if (usesPanel() && !drawerOpen) {
+          setPanelOpen(!panelOpen, trigger);
+          return;
+        }
+        if (usesPanel() && drawerOpen) {
+          window.dispatchEvent(new CustomEvent('maghapon:cart-close'));
+          return;
+        }
+        window.dispatchEvent(new CustomEvent('maghapon:cart-toggle', { detail: { trigger } }));
+      }
+
+      orderToggles.forEach((toggle) => toggle.addEventListener('click', handleOrderToggle));
+      document.addEventListener('click', (event) => {
+        if (event.target.closest('[data-order-close]')) setPanelOpen(false);
+      });
+      window.addEventListener('maghapon:drawer-state', (event) => {
+        drawerOpen = event.detail?.open === true;
+        if (drawerOpen) setPanelOpen(false);
+        syncOrderControls();
+      });
+
+      function syncRailToggle() {
+        if (!railToggle || !shell) return;
+        const collapsed = shell.classList.contains('rail-collapsed');
+        railToggle.setAttribute('aria-expanded', String(!collapsed));
+        railToggle.setAttribute('aria-label', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
+        railToggle.title = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
+      }
+
+      function storedRailPreference() {
+        try {
+          return localStorage.getItem(RAIL_STORAGE_KEY) === 'true';
+        } catch {
+          return false;
+        }
+      }
+
+      function setRailCollapsed(next, persist = true) {
+        if (!shell) return;
+        const collapsed = railQuery.matches && next;
+        shell.classList.toggle('rail-collapsed', collapsed);
+        if (persist && railQuery.matches) localStorage.setItem(RAIL_STORAGE_KEY, String(collapsed));
+        syncRailToggle();
+      }
+
+      setRailCollapsed(storedRailPreference(), false);
+      railToggle?.addEventListener('click', () => {
+        setRailCollapsed(!shell.classList.contains('rail-collapsed'));
+      });
+
+      const onDesktopBreakpointChange = () => {
+        if (usesPanel()) {
+          window.dispatchEvent(new CustomEvent('maghapon:cart-close'));
+        }
+        setPanelOpen(false);
+        syncOrderControls();
+      };
+      const onRailBreakpointChange = () => setRailCollapsed(storedRailPreference(), false);
+      desktopQuery.addEventListener('change', onDesktopBreakpointChange);
+      railQuery.addEventListener('change', onRailBreakpointChange);
+      syncOrderControls();
+
+      // ---- Mirror the cart badge to the mobile buttons ----
+      // CartDrawer updates #cart-count (global controls); keep the mobile badges in sync.
+      const badge = document.getElementById('cart-count');
+      const mirrors = document.querySelectorAll('[data-cart-badge]');
+      if (badge && mirrors.length) {
+        const sync = () => {
+          mirrors.forEach((m) => {
+            m.textContent = badge.textContent;
+            m.hidden = badge.hidden;
+          });
+        };
+        sync();
+        new MutationObserver(sync).observe(badge, { attributes: true, childList: true, subtree: true });
       }
     </script>
-  <!-- impeccable-live-start -->
-<script is:inline src="http://localhost:8400/live.js?token=48d01a70-2106-4b7a-bd22-0b89f60ec308"></script>
-<!-- impeccable-live-end -->
-</body>
+  </body>
 </html>

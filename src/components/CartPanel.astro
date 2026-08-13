@@ -1,0 +1,169 @@
+---
+// CartPanel — persistent right-hand cart column (≥1024px only; hidden 768–1023px and on admin).
+// Same cart state as CartDrawer: reads/writes localStorage via src/lib/cart.js and stays in
+// sync through the 'maghapon:cart-changed' window event (dispatched by both surfaces).
+---
+<aside class="cart-panel" id="cart-panel" aria-labelledby="cart-panel-title" aria-hidden="true">
+  <div class="cart-panel-head">
+    <h2 id="cart-panel-title">Your order</h2>
+    <button class="cart-panel-close" type="button" data-order-close aria-label="Close order menu">×</button>
+  </div>
+  <div class="cart-panel-body" id="cart-panel-body"></div>
+</aside>
+
+<script>
+  import {
+    removeItem,
+    updateQty,
+    cartTotal,
+    formatPeso,
+    loadCart,
+    saveCart,
+    loadOrders,
+    saveOrders,
+    createOrder,
+  } from '../lib/cart.js';
+
+  const body = document.getElementById('cart-panel-body');
+  let cart = loadCart();
+
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+  function persist() {
+    saveCart(cart);
+    window.dispatchEvent(new CustomEvent('maghapon:cart-changed'));
+  }
+
+  // ---- view: cart list ----
+  function renderCart() {
+    body.dataset.view = 'cart';
+    if (cart.length === 0) {
+      body.innerHTML = `
+        <div class="cart-panel-empty">
+          <div class="big" aria-hidden="true">☕</div>
+          <p>Your cart is empty.</p>
+          <a class="btn btn-primary" href="/menu">Browse the menu</a>
+        </div>`;
+      return;
+    }
+    body.innerHTML = `
+      <div class="cart-panel-lines">
+        ${cart
+          .map(
+            (l) => `
+          <div class="cart-line">
+            <div class="cart-line-main">
+              <div class="cart-line-name">${esc(l.name)}</div>
+              <div class="cart-line-detail">${esc(l.variant || '')}${l.modifiers.length ? ' · ' + esc(l.modifiers.join(' · ')) : ''}</div>
+              <div class="cart-line-qty">
+                <button data-panel-qty="${esc(l.key)}" data-d="-1" aria-label="Decrease quantity of ${esc(l.name)}">−</button>
+                <span>${l.qty}</span>
+                <button data-panel-qty="${esc(l.key)}" data-d="1" aria-label="Increase quantity of ${esc(l.name)}">+</button>
+                <button class="cart-line-remove" data-panel-remove="${esc(l.key)}">Remove</button>
+              </div>
+            </div>
+            <div class="cart-line-price">${formatPeso(l.unit * l.qty)}</div>
+          </div>`
+          )
+          .join('')}
+      </div>
+      <div class="cart-panel-foot">
+        <div class="cart-total"><span>Subtotal</span><b>${formatPeso(cartTotal(cart))}</b></div>
+        <button class="btn btn-primary btn-block" id="panel-checkout">Checkout</button>
+      </div>`;
+    body.querySelectorAll('[data-panel-qty]').forEach((b) =>
+      b.addEventListener('click', () => {
+        const line = cart.find((l) => l.key === b.dataset.panelQty);
+        if (!line) return;
+        cart = updateQty(cart, b.dataset.panelQty, line.qty + Number(b.dataset.d));
+        persist();
+        renderCart();
+      })
+    );
+    body.querySelectorAll('[data-panel-remove]').forEach((b) =>
+      b.addEventListener('click', () => {
+        cart = removeItem(cart, b.dataset.panelRemove);
+        persist();
+        renderCart();
+      })
+    );
+    body.querySelector('#panel-checkout').addEventListener('click', renderCheckout);
+  }
+
+  // ---- view: checkout (pickup, no payment) — same flow as the drawer ----
+  function renderCheckout() {
+    body.dataset.view = 'checkout';
+    body.innerHTML = `
+      <div class="checkout-summary">
+        ${cart
+          .map(
+            (l) => `
+            <div class="checkout-line">
+              <span>${l.qty}× ${esc(l.name)}${l.variant ? ' (' + esc(l.variant) + ')' : ''}</span>
+              <span>${formatPeso(l.unit * l.qty)}</span>
+            </div>`
+          )
+          .join('')}
+        <div class="cart-total"><span>Total</span><b>${formatPeso(cartTotal(cart))}</b></div>
+      </div>
+      <form id="panel-checkout-form" class="form-grid" novalidate>
+        <div class="field">
+          <label for="pc-type">Order type</label>
+          <select id="pc-type">
+            <option value="Pickup">Pickup</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="pc-name">Name</label>
+          <input id="pc-name" required placeholder="Your name" autocomplete="name" />
+        </div>
+        <div class="field">
+          <label for="pc-phone">Phone</label>
+          <input id="pc-phone" required placeholder="09xx xxx xxxx" autocomplete="tel" />
+        </div>
+        <button class="btn btn-primary btn-block" type="submit">Place order</button>
+      </form>
+      <p class="checkout-note">Demo checkout — no payment is taken. Pay at the counter when you pick up.</p>`;
+    body.querySelector('#panel-checkout-form').addEventListener('submit', placeOrder);
+  }
+
+  // ---- place order → confirmation (MAG-xxxx in 'maghapon-orders', exactly like the drawer) ----
+  function placeOrder(e) {
+    e.preventDefault();
+    cart = loadCart(); // never order from a stale view
+    if (cart.length === 0) {
+      renderCart();
+      return;
+    }
+    const name = body.querySelector('#pc-name').value.trim();
+    const phone = body.querySelector('#pc-phone').value.trim();
+    if (!name || !phone) return;
+    const orders = loadOrders();
+    const order = createOrder({
+      customer: { name, phone },
+      items: cart.map((l) => ({ name: l.name, variant: l.variant, modifiers: l.modifiers, qty: l.qty, unit: l.unit })),
+      total: cartTotal(cart),
+      orders,
+    });
+    saveOrders([order, ...orders]);
+    cart = [];
+    persist();
+    body.dataset.view = 'done';
+    body.innerHTML = `
+      <div class="done-icon" aria-hidden="true">✓</div>
+      <div class="done-number">${esc(order.id)}</div>
+      <p class="done-copy">Thanks, ${esc(name)}! Your order is in — we'll start preparing it right away.</p>
+      <p class="done-copy">Pickup · ${formatPeso(order.total)} · ${order.items.length} item${order.items.length === 1 ? '' : 's'}</p>
+      <button class="btn btn-primary btn-block" id="panel-done">Done</button>`;
+    body.querySelector('#panel-done').addEventListener('click', renderCart);
+  }
+
+  // ---- sync with CartDrawer: same cart, same localStorage, same event ----
+  window.addEventListener('maghapon:cart-changed', () => {
+    cart = loadCart();
+    if (body.dataset.view === 'cart') renderCart();
+  });
+
+  renderCart();
+</script>

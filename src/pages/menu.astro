@@ -1,5 +1,5 @@
 ---
-// Menu — full menu in 7 category sections, sticky anchor tabs, ordering
+// Menu — full menu in 7 category sections, sticky anchor tabs, ordering, search
 import Base from '../layouts/Base.astro';
 import MenuCard from '../components/MenuCard.astro';
 import CategoryTabs from '../components/CategoryTabs.astro';
@@ -21,6 +21,10 @@ const notes = { Classics: CLASSICS_NOTE, Matcha: MATCHA_NOTE };
         Everything below is on the café menu today — prices in pesos, sizes noted per drink.
         Add anything to your cart and check out at the counter.
       </p>
+      <div class="search-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+        <input id="menu-search" class="search-input" type="search" placeholder="Search coffee, matcha, rice bowls…" aria-label="Search the menu" />
+      </div>
     </div>
   </div>
 
@@ -40,6 +44,10 @@ const notes = { Classics: CLASSICS_NOTE, Matcha: MATCHA_NOTE };
         </div>
       </section>
     ))}
+
+    <div class="order-empty" id="menu-empty" hidden>
+      <p>No matches — try another search.</p>
+    </div>
 
     <!-- Extras -->
     <section class="menu-section" id="extras">
@@ -76,5 +84,33 @@ const notes = { Classics: CLASSICS_NOTE, Matcha: MATCHA_NOTE };
       const btn = e.target.closest('[data-add]');
       if (btn && window.maghaponCart) window.maghaponCart.openConfig(btn.dataset.add);
     });
+
+    // Search filters every card by name/description; empty sections collapse
+    const search = document.getElementById('menu-search');
+    const cards = [...document.querySelectorAll('.menu-card')];
+    const sections = [...document.querySelectorAll('.menu-section')];
+    const extras = document.getElementById('extras');
+    const offMenu = document.querySelector('.off-menu-note');
+    const empty = document.getElementById('menu-empty');
+
+    function applyMenuSearch() {
+      const q = search.value.trim().toLowerCase();
+      let visible = 0;
+      cards.forEach((card) => {
+        const match = !q || card.dataset.search.includes(q);
+        card.hidden = !match;
+        if (match) visible++;
+      });
+      sections.forEach((sec) => {
+        if (sec.id === 'extras') return;
+        const anyVisible = [...sec.querySelectorAll('.menu-card')].some((c) => !c.hidden);
+        sec.hidden = !anyVisible;
+      });
+      if (extras) extras.hidden = !!q;
+      if (offMenu) offMenu.hidden = !!q;
+      if (empty) empty.hidden = visible > 0;
+    }
+
+    search.addEventListener('input', applyMenuSearch);
   </script>
 </Base>

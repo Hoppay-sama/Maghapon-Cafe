@@ -1,7 +1,9 @@
 ---
 // Hero — full-bleed coffee photo, dark overlay, cream text, brand tagline
+// compact: slim brand banner used below the ordering surface on the landing page
+const { compact = false } = Astro.props;
 ---
-<section class="hero">
+<section class={compact ? 'hero hero-compact' : 'hero'}>
   <img
     class="hero-bg"
     src="/images/hero.webp"
@@ -23,13 +25,15 @@
       </p>
       <div class="hero-cta">
         <a class="btn btn-primary" href="/menu">View the menu</a>
-        <a class="btn btn-outline" href="/#booking">Book a table</a>
+        <a class="btn btn-outline" href="/booking">Book a table</a>
       </div>
-      <div class="hero-meta">
-        <div><strong>2 PM – 11 PM</strong><span>Open daily · GMT+8</span></div>
-        <div><strong>Caloocan</strong><span>Metro Manila</span></div>
-        <div><strong>@maghaponcafe</strong><span>IG · FB · TikTok</span></div>
-      </div>
+      {!compact && (
+        <div class="hero-meta">
+          <div><strong>2 PM – 11 PM</strong><span>Open daily · GMT+8</span></div>
+          <div><strong>Caloocan</strong><span>Metro Manila</span></div>
+          <div><strong>@maghaponcafe</strong><span>IG · FB · TikTok</span></div>
+        </div>
+      )}
     </div>
   </div>
 </section>

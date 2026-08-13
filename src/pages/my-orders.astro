@@ -1,0 +1,84 @@
+---
+// My orders — customer order history from localStorage 'maghapon-orders' (same data admin reads).
+import Base from '../layouts/Base.astro';
+---
+<Base
+  title="My orders — Maghapon Café"
+  description="Your order history at Maghapon Café — follow each order from Received to Served."
+>
+  <div class="page-head">
+    <div class="container">
+      <span class="eyebrow">Order history</span>
+      <h1>My orders</h1>
+      <p>
+        Everything you've ordered from this browser. Check the status of each order — it moves
+        from Received to Preparing to Ready to Served as the café works through it.
+      </p>
+    </div>
+  </div>
+
+  <div class="container my-orders-list" id="my-orders-list"></div>
+
+  <script>
+    import { loadOrders } from '../lib/cart.js';
+
+    function esc(s) {
+      return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+    function manilaTime(iso) {
+      return new Date(iso).toLocaleString('en-PH', {
+        timeZone: 'Asia/Manila',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    }
+
+    function render() {
+      const orders = loadOrders();
+      const list = document.getElementById('my-orders-list');
+      if (orders.length === 0) {
+        list.innerHTML = `
+          <div class="admin-empty">
+            <p>No orders yet — order something delicious.</p>
+            <a class="btn btn-primary" href="/menu">Browse the menu</a>
+          </div>`;
+        return;
+      }
+      list.innerHTML = orders
+        .map(
+          (o) => `
+          <article class="order-card">
+            <div class="order-head">
+              <span class="order-number">${esc(o.id)}</span>
+              <span class="order-time">${esc(manilaTime(o.createdAt))}</span>
+            </div>
+            <div class="order-meta">${esc(o.type)} · ${esc(o.customer.name)}</div>
+            <div class="order-items">
+              ${o.items
+                .map(
+                  (i) => `<div class="order-item">
+                    <span>${i.qty}× ${esc(i.name)}${i.variant ? ' (' + esc(i.variant) + ')' : ''}${i.modifiers && i.modifiers.length ? ' <small>+ ' + esc(i.modifiers.join(', ')) + '</small>' : ''}</span>
+                    <span>₱${i.unit * i.qty}</span>
+                  </div>`
+                )
+                .join('')}
+            </div>
+            <div class="order-total"><span>Total</span><b>₱${o.total}</b></div>
+            <div class="my-status-row">
+              <span class="my-status ${o.status === 'Served' ? 'done' : ''}">
+                ${o.status === 'Served' ? 'Served ✓' : esc(o.status)}
+              </span>
+            </div>
+          </article>`
+        )
+        .join('');
+    }
+
+    render();
+    // Live updates: orders placed in ANOTHER tab of this browser appear here
+    window.addEventListener('storage', render);
+    window.addEventListener('focus', render);
+  </script>
+</Base>
