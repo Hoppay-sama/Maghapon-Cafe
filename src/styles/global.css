@@ -63,7 +63,7 @@ h4 {
   font-weight: 600;
 }
 h1 {
-  font-size: clamp(2.2rem, 6vw, 3.6rem);
+  font-size: clamp(2.6rem, 7vw, 4.4rem);
 }
 h2 {
   font-size: clamp(1.6rem, 4vw, 2.4rem);
@@ -125,7 +125,7 @@ em {
   box-shadow: var(--shadow);
 }
 .btn-outline {
-  border-color: rgba(244, 239, 230, 0.7);
+  border-color: var(--line-light);
   color: var(--cream-bright);
   background: transparent;
 }
@@ -250,7 +250,8 @@ em {
 }
 .cart-btn:hover {
   transform: translateY(-2px);
-  background: #fff;
+  background: var(--cream);
+  box-shadow: var(--shadow);
 }
 .cart-count {
   position: absolute;
@@ -741,7 +742,8 @@ em {
 }
 .field input:focus,
 .field select:focus {
-  outline: 3px solid rgba(187, 61, 3, 0.25);
+  outline: 3px solid var(--rust-amber);
+  outline-offset: 2px;
   border-color: var(--rust);
 }
 .form-actions {
@@ -797,7 +799,7 @@ em {
   flex: 1 1 200px;
   min-height: 46px;
   padding: 0.55rem 0.9rem;
-  border-radius: 999px;
+  border-radius: var(--radius-sm);
   border: 1px solid rgba(244, 239, 230, 0.4);
   background: rgba(244, 239, 230, 0.12);
   color: var(--cream-bright);
@@ -926,7 +928,7 @@ em {
   min-height: 44px;
   border-radius: 50%;
   border: 1px solid var(--line);
-  background: #fff;
+  background: var(--cream);
   font-size: 1.3rem;
   line-height: 1;
   cursor: pointer;
@@ -1034,7 +1036,7 @@ em {
   min-height: 44px;
   border-radius: 50%;
   border: 1px solid var(--line);
-  background: #fff;
+  background: var(--cream);
   font-size: 1.2rem;
   cursor: pointer;
   color: var(--ink);
@@ -1077,7 +1079,7 @@ em {
   min-height: 34px;
   border-radius: 50%;
   border: 1px solid var(--line);
-  background: #fff;
+  background: var(--cream);
   cursor: pointer;
   font-size: 1rem;
   color: var(--ink);
@@ -1337,7 +1339,7 @@ em {
   padding: 0;
   background: transparent;
   border: none;
-  border-radius: 8px;
+  border-radius: 999px;
   color: var(--ink);
   cursor: pointer;
 }
@@ -1440,7 +1442,7 @@ em {
   padding: 0;
   background: transparent;
   border: none;
-  border-radius: 8px;
+  border-radius: 999px;
   color: var(--ink);
   font-size: 1.1rem;
   cursor: pointer;

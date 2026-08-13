@@ -30,7 +30,11 @@ Thumbs.db
 
 # Docs
 AGENTS.md
+DESIGN.md
+PRODUCT.md
 
 # Documentation (specs/design docs — not committed unless part of production)
 docs/
 superpowers/
+.planning/
+.impeccable/
