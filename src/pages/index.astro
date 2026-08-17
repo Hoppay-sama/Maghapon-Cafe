@@ -17,6 +17,18 @@ const featuredIds = [
   'bacon-carbonara',
   'blueberry-soda',
 ];
+
+// Product photos for the featured items (mapped to sample assets)
+const featuredImages = {
+  'maghapon-latte': '/images/products/coffee-1.jpg',
+  'sea-salt-cloud-latte': '/images/products/coffee-2.jpg',
+  'strawberry-matcha': '/images/products/menu-matcha.jpg',
+  'skrambol-latte': '/images/products/coffee-3.jpg',
+  'salted-cookie': '/images/products/menu-1.jpg',
+  'tapa-bowl': '/images/products/menu-2.jpg',
+  'bacon-carbonara': '/images/products/menu-3.jpg',
+  'blueberry-soda': '/images/products/menu-classic.jpg',
+};
 ---
 <Base>
   <!-- Ordering surface — the first screen -->
@@ -44,7 +56,7 @@ const featuredIds = [
 
       <div class="featured-grid" id="featured-grid" data-featured={featuredIds.join(',')}>
         {menu.map((item) => (
-          <MenuCard item={item} compact reveal={false} hidden={!featuredIds.includes(item.id)} />
+          <MenuCard item={item} compact reveal={false} hidden={!featuredIds.includes(item.id)} image={featuredImages[item.id]} />
         ))}
       </div>
 
